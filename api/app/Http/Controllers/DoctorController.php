@@ -16,7 +16,7 @@ class DoctorController extends Controller
      */
     public function index()
     {
-        return Doctor::all(); // TODO add pagination
+        return Doctor::latest('id')->get(); // TODO add pagination
     }
 
     /**
@@ -38,7 +38,7 @@ class DoctorController extends Controller
     public function store(StoreDoctorRequest $request)
     {
         Doctor::create($request->validated());
-        return Doctor::all();
+        return Doctor::latest('id')->get();
     }
 
     /**
@@ -74,7 +74,7 @@ class DoctorController extends Controller
     {
         $doctor->update($request->validated());
 
-        return Doctor::all();
+        return Doctor::latest('id')->get();
     }
 
     /**
@@ -86,6 +86,6 @@ class DoctorController extends Controller
     public function destroy(Doctor $doctor)
     {
         $doctor->delete();
-        return Doctor::all();
+        return Doctor::latest('id')->get();
     }
 }

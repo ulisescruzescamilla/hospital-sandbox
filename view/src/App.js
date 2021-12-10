@@ -1,17 +1,13 @@
-import logo from './logo.svg';
 import './App.css';
+import 'bootstrap/dist/css/bootstrap.min.css'; // styles
 import React, { useState, useEffect } from 'react';
 import Table from 'react-bootstrap/Table';
 import Col from 'react-bootstrap/Col';
 import Row from 'react-bootstrap/Row';
 import Container from 'react-bootstrap/Container';
-import axios from 'axios';
 import API from './api'; // TODO move api.js to new folder
-import 'bootstrap/dist/css/bootstrap.min.css'; // styles
-import Nav from 'react-bootstrap/Nav';
 import Navbar from 'react-bootstrap/Navbar';
-import {Form, Button, Alert, Modal, Toast} from 'react-bootstrap';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {Form, Button, Modal, Toast, Spinner, Alert} from 'react-bootstrap';
 
 function App() {
 
@@ -26,6 +22,8 @@ function App() {
     const [show, setShow] = useState(false);
     const [showDanger, setDangerShow] = useState(false);
     const [showSuccess, setSuccessToast] = useState(false);
+    const [showValidationError, setValidationError] = useState(false);
+    const [error, setError] = useState(null);
 
     const handleClose = () => setShow(false);
     const handleShow = () => setShow(true);
@@ -57,7 +55,8 @@ function App() {
         setShow(true);
     }
 
-    const handlerDelete = () => {
+    const handlerDelete = (e) => {
+        e.preventDefault();
         API.delete(`doctors/${doctorSelected.id}`)
         .then(res => {
             console.debug(res);
@@ -71,13 +70,18 @@ function App() {
         });
     }
 
-    const handleDoctorSumbit = () => {
+    const handleDoctorSumbit = (e) => {
+        e.preventDefault();
+        setValidationError(false);
+        // validate
+
         let payload = {
             name: name,
             last_name: lastName,
             specialties: specialties,
             cedula: cedula
         };
+        console.debug("payload", payload);
 
         let endpoint = null;
 
@@ -94,12 +98,48 @@ function App() {
             setIsEdit(false);
             setSuccessToast(true);
         }).catch(err => {
-            console.error(err);
+            // console.error(err);
+            let errors = [err.response.data.errors];
+            console.error(errors);
+            setValidationError(true);
+            setError(JSON.stringify(errors));// TODO beautify this response
         });
     }
 
     const showDangerToast = (flag) => {
         setDangerShow(flag);
+    }
+
+    const table = () => {
+        return (
+            <Table striped bordered hover id="all">
+            <thead>
+                <tr>
+                <th>#</th>
+                <th>First Name</th>
+                <th>Last Name</th>
+                <th>Specialties</th>
+                <th>Cedula</th>
+                <th>Manage</th>
+                </tr>
+            </thead>
+            <tbody>
+                    { doctors.map( (doctor, i) => 
+                        <tr key={i}>
+                        <td>{doctor.id}</td>
+                        <td>{doctor.name}</td>
+                        <td>{doctor.last_name}</td>
+                        <td>{doctor.specialties}</td>
+                        <td>{doctor.cedula}</td>
+                        <td >
+                            <Button onClick={() => handlerEdit(doctor)} style={{margin: '1%'}} variant="success">Edit</Button>
+                            <Button onClick={() => handlerVerify(doctor)} style={{margin: '1%'}} variant="danger">Delete</Button>
+                        </td>
+                        </tr>
+                    )}
+            </tbody>
+            </Table>
+        )
     }
 
     if (!doctors) return null;
@@ -135,7 +175,7 @@ function App() {
           <Button variant="secondary" onClick={handleClose}>
             Back
           </Button>
-          <Button variant="danger" onClick={handlerDelete}>Delete</Button>
+          <Button type="button" variant="danger" onClick={handlerDelete}>Delete</Button>
         </Modal.Footer>
         </Modal>
         </>
@@ -172,6 +212,14 @@ function App() {
         </Toast>
 
       <Form style={{padding: '10%'}} id="create">
+      {showValidationError && (
+            <Alert variant="danger" onClose={() => setValidationError(false)} dismissible>
+                <Alert.Heading>Oh snap! You got an error!</Alert.Heading>
+                <p>
+                {error}
+                </p>
+            </Alert>
+            )}
       <h1>DOCTOR</h1>
         <Row style={{marginBottom: '2%'}}>
             <Col>
@@ -214,33 +262,9 @@ function App() {
         {/* TABLE */}
         <h1>ALL DOCTORS</h1>
       <Container>
-      <Table striped bordered hover id="all">
-  <thead>
-    <tr>
-      <th>#</th>
-      <th>First Name</th>
-      <th>Last Name</th>
-      <th>Specialties</th>
-      <th>Cedula</th>
-      <th>Manage</th>
-    </tr>
-  </thead>
-  <tbody>
-        { doctors.map( (doctor, i) => 
-            <tr key={i}>
-            <td>{doctor.id}</td>
-            <td>{doctor.name}</td>
-            <td>{doctor.last_name}</td>
-            <td>{doctor.specialties}</td>
-            <td>{doctor.cedula}</td>
-            <td >
-                <Button onClick={() => handlerEdit(doctor)} style={{margin: '1%'}} variant="success">Edit</Button>
-                <Button onClick={() => handlerVerify(doctor)} style={{margin: '1%'}} variant="danger">Delete</Button>
-            </td>
-            </tr>
-        )}
-  </tbody>
-</Table>
+      {/* TODO refactor to a component */}
+      {doctors.length ? table() : (<Spinner animation="border" variant="primary" />)}
+
       </Container>
     </div>
   );
